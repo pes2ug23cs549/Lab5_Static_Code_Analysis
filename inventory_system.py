@@ -1,61 +1,83 @@
 import json
-import logging
-from datetime import datetime
+import logging  
 
 # Global variable
 stock_data = {}
 
-def addItem(item="default", qty=0, logs=[]):
-    if not item:
-        return
-    stock_data[item] = stock_data.get(item, 0) + qty
-    logs.append("%s: Added %d of %s" % (str(datetime.now()), qty, item))
 
-def removeItem(item, qty):
+def addItem(item_name, quantity, stock_data=None):
+    """Add a new item to inventory or update its quantity."""
+    # Fix for W0102: avoid mutable default []
+    if stock_data is None:
+        stock_data = []
+
+    # Adds item to stock
+    if item_name in stock_data:
+        stock_data[item_name] += quantity
+    else:
+        stock_data[item_name] = quantity
+    print(f"Added {quantity} of {item_name}")
+
+
+def removeItem(item, stock_data):
+    """Remove item from stock."""
     try:
-        stock_data[item] -= qty
-        if stock_data[item] <= 0:
-            del stock_data[item]
-    except:
-        pass
+        del stock_data[item]
+    # Fix for W0702/E722: avoid bare except
+    except KeyError:
+        print(f"Item '{item}' not found in stock data.")
 
-def getQty(item):
-    return stock_data[item]
 
-def loadData(file="inventory.json"):
-    f = open(file, "r")
-    global stock_data
-    stock_data = json.loads(f.read())
-    f.close()
+def getQty(item, stock_data):
+    """Get the quantity of an item."""
+    return stock_data.get(item, 0)
 
-def saveData(file="inventory.json"):
-    f = open(file, "w")
-    f.write(json.dumps(stock_data))
-    f.close()
 
-def printData():
-    print("Items Report")
-    for i in stock_data:
-        print(i, "->", stock_data[i])
+def loadData():
+    """Load inventory data from a file."""
+    global stock_data  
+    # Fix for R1732: use context manager + encoding
+    try:
+        with open("inventory_data.json", "r", encoding="utf-8") as file:
+            stock_data = json.load(file)
+    except FileNotFoundError:
+        stock_data = {}
+    return stock_data
 
-def checkLowItems(threshold=5):
-    result = []
-    for i in stock_data:
-        if stock_data[i] < threshold:
-            result.append(i)
-    return result
 
-def main():
-    addItem("apple", 10)
-    addItem("banana", -2)
-    addItem(123, "ten")  # invalid types, no check
-    removeItem("apple", 3)
-    removeItem("orange", 1)
-    print("Apple stock:", getQty("apple"))
-    print("Low items:", checkLowItems())
-    saveData()
-    loadData()
-    printData()
-    eval("print('eval used')")  # dangerous
+def saveData(stock_data):
+    """Save inventory data to a file."""
+    # Fix for R1732: use context manager + encoding
+    with open("inventory_data.json", "w", encoding="utf-8") as file:
+        json.dump(stock_data, file, indent=4)
+    print("Inventory data saved successfully.")
 
-main()
+
+def printData(stock_data):
+    """Print all items in the inventory."""
+    print("Current Inventory:")
+    for item, qty in stock_data.items():
+        print(f"{item}: {qty}")
+
+
+def checkLowItems(stock_data, threshold=5):
+    """Check and print items below the threshold quantity."""
+    low_items = [item for item, qty in stock_data.items() if qty < threshold]
+    if low_items:
+        print("Low stock alert for items:")
+        for item in low_items:
+            print(f"  - {item}")
+    else:
+        print("All items are sufficiently stocked.")
+
+if __name__ == "__main__":
+    stock_data = loadData()
+    addItem("Apples", 10, stock_data)
+    removeItem("Bananas", stock_data)
+    printData(stock_data)
+    checkLowItems(stock_data)
+
+    saveData(stock_data)
+
+    # Fix for B307/W0123: Removed insecure eval() usage
+    print("Inventory check completed safely.")
