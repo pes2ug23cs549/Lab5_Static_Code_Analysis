@@ -1,1 +1,5 @@
-
+inventory_system.py:2:1: F401 'logging' imported but unused
+inventory_system.py:2:15: W291 trailing whitespace
+inventory_system.py:38:22: W291 trailing whitespace
+inventory_system.py:73:1: E305 expected 2 blank lines after class or function definition, found 1
+inventory_system.py:84:1: W391 blank line at end of file
